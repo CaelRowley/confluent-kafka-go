@@ -397,8 +397,8 @@ func (ao AdminOptionMatchConsumerGroupTypes) apply(cOptions *C.rd_kafka_AdminOpt
 	cTypes := make([]C.rd_kafka_consumer_group_type_t, len(ao.val))
 	cTypesCount := C.size_t(len(ao.val))
 
-	for idx, type := range ao.val {
-		cTypes[idx] = C.rd_kafka_consumer_group_type_t(type)
+	for idx, groupType := range ao.val {
+		cTypes[idx] = C.rd_kafka_consumer_group_type_t(groupType)
 	}
 
 	cTypesPtr := ((*C.rd_kafka_consumer_group_type_t)(&cTypes[0]))
