@@ -439,16 +439,52 @@ func testAdminAPIsDeleteACLs(what string, a *AdminClient, t *testing.T) {
 
 func testAdminAPIsListConsumerGroups(
 	what string, a *AdminClient, expDuration time.Duration, t *testing.T) {
+
+	ctx, cancel := context.WithTimeout(context.Background(), expDuration)
+	defer cancel()
+
 	state, err := ConsumerGroupStateFromString("Stable")
 	if err != nil || state != ConsumerGroupStateStable {
 		t.Fatalf("Expected ConsumerGroupStateFromString to work for Stable state")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), expDuration)
-	defer cancel()
 	listres, err := a.ListConsumerGroups(
 		ctx, SetAdminRequestTimeout(time.Second),
 		SetAdminMatchConsumerGroupStates([]ConsumerGroupState{state}))
+	if err == nil {
+		t.Fatalf("Expected ListConsumerGroups to fail, but got result: %v, err: %v",
+			listres, err)
+	}
+	if ctx.Err() != context.DeadlineExceeded {
+		t.Fatalf("Expected DeadlineExceeded, not %v", ctx.Err())
+	}
+
+	// Unknown Group Types can not be set
+	unknownGroupType, err := ConsumerGroupTypeFromString("Unknown")
+	if err != nil || unknownGroupType != ConsumerGroupTypeUnknown {
+		t.Fatalf("Expected ConsumerGroupStateFromString to work for Stable state")
+	}
+
+	listres, err := a.ListConsumerGroups(
+		ctx, SetAdminRequestTimeout(time.Second),
+		SetAdminMatchConsumerGroupTypes([]ConsumerGroupType{unknownGroupType}))
+	if err == nil {
+		t.Fatalf("Expected ListConsumerGroups to fail, but got result: %v, err: %v",
+			listres, err)
+	}
+	if ctx.Err() != context.DeadlineExceeded {
+		t.Fatalf("Expected DeadlineExceeded, not %v", ctx.Err())
+	}
+
+	// Duplicate Group Types can not be set
+	classicGroupType, err := ConsumerGroupTypeFromString("Classic")
+	if err != nil || classicGroupType != ConsumerGroupTypeClassic {
+		t.Fatalf("Expected ConsumerGroupStateFromString to work for Stable state")
+	}
+
+	listres, err := a.ListConsumerGroups(
+		ctx, SetAdminRequestTimeout(time.Second),
+		SetAdminMatchConsumerGroupTypes([]ConsumerGroupType{classicGroupType, classicGroupType}))
 	if err == nil {
 		t.Fatalf("Expected ListConsumerGroups to fail, but got result: %v, err: %v",
 			listres, err)
